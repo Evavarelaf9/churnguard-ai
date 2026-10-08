@@ -1,0 +1,3259 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ChurnGuard AI API",
+    "description": "\n**Inteligência Artificial para prever cancelamentos antes que eles aconteçam.**\n\nA API expõe o modelo de churn do ChurnGuard AI: probabilidade estimada de cancelamento em 60 dias,\nnível de risco, explicação em linguagem de negócio, simulação de retenção e registro de ações.\n\n⚠️ As previsões são **probabilidades estimadas**, não certezas. Recomendações são sugestões baseadas em\ndados — a decisão final é sempre humana. Consultas a dados de clientes são registradas (LGPD).\n\n**Autenticação:** header `X-API-Key` (desativada em desenvolvimento quando `API_KEYS` está vazio).\n",
+    "contact": {
+      "name": "ChurnGuard AI"
+    },
+    "license": {
+      "name": "MIT"
+    },
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/predict": {
+      "post": {
+        "tags": [
+          "Previsão"
+        ],
+        "summary": "Probabilidade de churn de um cliente",
+        "description": "Recebe os dados agregados de um cliente e retorna a **probabilidade estimada** de cancelamento em 60 dias, o nível de risco, os principais fatores e uma sugestão de ação. Se `customer_id` existir no banco, a previsão é registrada para monitoramento.",
+        "operationId": "predict_api_v1_predict_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "threshold",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 0.99,
+                  "minimum": 0.01
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Threshold de alto risco (padrão: o do modelo)",
+              "title": "Threshold"
+            },
+            "description": "Threshold de alto risco (padrão: o do modelo)"
+          },
+          {
+            "name": "limite_medio",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 0.99,
+                  "minimum": 0.01
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Limite de médio risco (padrão: o do modelo)",
+              "title": "Limite Medio"
+            },
+            "description": "Limite de médio risco (padrão: o do modelo)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerFeatures"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/predict/batch": {
+      "post": {
+        "tags": [
+          "Previsão"
+        ],
+        "summary": "Previsão em lote",
+        "description": "Até `BATCH_MAX_SIZE` clientes por requisição. Use `explicar=true` para incluir fatores.",
+        "operationId": "predict_batch_api_v1_predict_batch_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "threshold",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 0.99,
+                  "minimum": 0.01
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Threshold de alto risco (padrão: o do modelo)",
+              "title": "Threshold"
+            },
+            "description": "Threshold de alto risco (padrão: o do modelo)"
+          },
+          {
+            "name": "limite_medio",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 0.99,
+                  "minimum": 0.01
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Limite de médio risco (padrão: o do modelo)",
+              "title": "Limite Medio"
+            },
+            "description": "Limite de médio risco (padrão: o do modelo)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BatchRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BatchResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/customers": {
+      "get": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Lista clientes ativos com o risco mais recente",
+        "operationId": "list_customers_api_v1_customers_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "nivel_risco",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "enum": [
+                      "Baixo",
+                      "Médio",
+                      "Alto"
+                    ],
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Um ou mais níveis",
+              "title": "Nivel Risco"
+            },
+            "description": "Um ou mais níveis"
+          },
+          {
+            "name": "plano",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Plano"
+            }
+          },
+          {
+            "name": "regiao",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Regiao"
+            }
+          },
+          {
+            "name": "valor_min",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor Min"
+            }
+          },
+          {
+            "name": "valor_max",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "minimum": 0
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Valor Max"
+            }
+          },
+          {
+            "name": "data_referencia",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Período (data de referência da previsão)",
+              "title": "Data Referencia"
+            },
+            "description": "Período (data de referência da previsão)"
+          },
+          {
+            "name": "busca",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "maxLength": 60
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Nome ou ID",
+              "title": "Busca"
+            },
+            "description": "Nome ou ID"
+          },
+          {
+            "name": "ordenar",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "probabilidade",
+                "receita_em_risco",
+                "valor_mensal",
+                "nome"
+              ],
+              "type": "string",
+              "default": "probabilidade",
+              "title": "Ordenar"
+            }
+          },
+          {
+            "name": "pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1,
+              "title": "Pagina"
+            }
+          },
+          {
+            "name": "tamanho_pagina",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 25,
+              "title": "Tamanho Pagina"
+            }
+          },
+          {
+            "name": "threshold",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 0.99,
+                  "minimum": 0.01
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Limite de alto risco (padrão: o do modelo)",
+              "title": "Threshold"
+            },
+            "description": "Limite de alto risco (padrão: o do modelo)"
+          },
+          {
+            "name": "limite_medio",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 0.99,
+                  "minimum": 0.01
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Limite de médio risco (padrão: o do modelo)",
+              "title": "Limite Medio"
+            },
+            "description": "Limite de médio risco (padrão: o do modelo)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerList"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/customers/{customer_id}": {
+      "get": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Detalhes, histórico e previsão do cliente",
+        "operationId": "get_customer_api_v1_customers__customer_id__get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/customers/{customer_id}/risk": {
+      "get": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Calcula o risco atual do cliente",
+        "description": "Monta os atributos a partir do banco (somente dados até a data de referência), calcula a probabilidade, explica e registra a previsão.",
+        "operationId": "customer_risk_api_v1_customers__customer_id__risk_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          },
+          {
+            "name": "data_referencia",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Padrão: hoje",
+              "title": "Data Referencia"
+            },
+            "description": "Padrão: hoje"
+          },
+          {
+            "name": "threshold",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 0.99,
+                  "minimum": 0.01
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Threshold"
+            }
+          },
+          {
+            "name": "limite_medio",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 0.99,
+                  "minimum": 0.01
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Limite de médio risco (padrão: o do modelo)",
+              "title": "Limite Medio"
+            },
+            "description": "Limite de médio risco (padrão: o do modelo)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/customers/{customer_id}/simulate": {
+      "post": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Simulação de retenção (e se...?)",
+        "description": "Altera sinais hipotéticos (uso, atrasos, chamados, plano...) e compara a probabilidade. **É uma simulação**, não uma previsão garantida do comportamento do cliente. Nada é gravado.",
+        "operationId": "simulate_api_v1_customers__customer_id__simulate_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          },
+          {
+            "name": "threshold",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 0.99,
+                  "minimum": 0.01
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Threshold"
+            }
+          },
+          {
+            "name": "limite_medio",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 0.99,
+                  "minimum": 0.01
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Limite de médio risco (padrão: o do modelo)",
+              "title": "Limite Medio"
+            },
+            "description": "Limite de médio risco (padrão: o do modelo)"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SimulationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SimulationResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/customers/{customer_id}/actions": {
+      "get": {
+        "tags": [
+          "Ações de retenção"
+        ],
+        "summary": "Ações de retenção do cliente",
+        "operationId": "customer_actions_api_v1_customers__customer_id__actions_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RetentionActionOut"
+                  },
+                  "title": "Response Customer Actions Api V1 Customers  Customer Id  Actions Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Ações de retenção"
+        ],
+        "summary": "Registra uma ação de retenção (decisão humana)",
+        "operationId": "create_action_api_v1_customers__customer_id__actions_post",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "customer_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Customer Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetentionActionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionActionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/actions": {
+      "get": {
+        "tags": [
+          "Ações de retenção"
+        ],
+        "summary": "Lista ações de retenção",
+        "operationId": "list_actions_api_v1_actions_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "Planejada",
+                    "Em andamento",
+                    "Concluída",
+                    "Cancelada"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limite"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RetentionActionOut"
+                  },
+                  "title": "Response List Actions Api V1 Actions Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/actions/{action_id}": {
+      "patch": {
+        "tags": [
+          "Ações de retenção"
+        ],
+        "summary": "Atualiza status/resultado da ação",
+        "operationId": "update_action_api_v1_actions__action_id__patch",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "action_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Action Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RetentionActionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RetentionActionOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/dashboard/summary": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Indicadores, distribuições e gráficos do dashboard",
+        "operationId": "summary_api_v1_dashboard_summary_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "threshold",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 0.99,
+                  "minimum": 0.01
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Limite de alto risco",
+              "title": "Threshold"
+            },
+            "description": "Limite de alto risco"
+          },
+          {
+            "name": "limite_medio",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "number",
+                  "maximum": 0.99,
+                  "minimum": 0.01
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Limite de médio risco (padrão: o do modelo)",
+              "title": "Limite Medio"
+            },
+            "description": "Limite de médio risco (padrão: o do modelo)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/meta/filtros": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Opções para os filtros da interface",
+        "operationId": "filtros_api_v1_meta_filtros_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/meta/thresholds": {
+      "get": {
+        "tags": [
+          "Dashboard"
+        ],
+        "summary": "Trade-off precision × recall por threshold",
+        "description": "Calculado com previsões cujo resultado real já foi observado. Mostra também quantos clientes ativos seriam sinalizados hoje em cada threshold.",
+        "operationId": "thresholds_api_v1_meta_thresholds_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/monitoring/summary": {
+      "get": {
+        "tags": [
+          "Monitoramento"
+        ],
+        "summary": "Saúde do modelo: desempenho, drift, calibração e alertas",
+        "description": "Calculado na hora a partir das previsões registradas. Desempenho usa apenas previsões cujo resultado real (60 dias) já foi observado; drift compara os atributos atuais com os dados de validação do modelo (PSI).",
+        "operationId": "monitoring_summary_api_v1_monitoring_summary_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/monitoring/run": {
+      "post": {
+        "tags": [
+          "Monitoramento"
+        ],
+        "summary": "Executa o monitoramento e grava o resultado",
+        "operationId": "monitoring_run_api_v1_monitoring_run_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/monitoring/runs": {
+      "get": {
+        "tags": [
+          "Monitoramento"
+        ],
+        "summary": "Histórico de execuções do monitoramento",
+        "operationId": "monitoring_runs_api_v1_monitoring_runs_get",
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "limite",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 20,
+              "title": "Limite"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/model/info": {
+      "get": {
+        "tags": [
+          "Modelo"
+        ],
+        "summary": "Versão, parâmetros, thresholds e premissas do modelo",
+        "operationId": "info_api_v1_model_info_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelInfo"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/model/metrics": {
+      "get": {
+        "tags": [
+          "Modelo"
+        ],
+        "summary": "Métricas do modelo no período de teste",
+        "operationId": "metrics_api_v1_model_metrics_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ModelMetrics"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "Sistema"
+        ],
+        "summary": "Verifica API, banco e modelo",
+        "operationId": "health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Sistema"
+        ],
+        "summary": "Verifica API, banco e modelo",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "BatchRequest": {
+        "properties": {
+          "clientes": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerFeatures"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Clientes"
+          },
+          "explicar": {
+            "type": "boolean",
+            "title": "Explicar",
+            "description": "Incluir fatores e recomendação (mais lento)",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "clientes"
+        ],
+        "title": "BatchRequest"
+      },
+      "BatchResponse": {
+        "properties": {
+          "resumo": {
+            "$ref": "#/components/schemas/BatchSummary"
+          },
+          "resultados": {
+            "items": {
+              "$ref": "#/components/schemas/PredictionResult"
+            },
+            "type": "array",
+            "title": "Resultados"
+          }
+        },
+        "type": "object",
+        "required": [
+          "resumo",
+          "resultados"
+        ],
+        "title": "BatchResponse"
+      },
+      "BatchSummary": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "alto": {
+            "type": "integer",
+            "title": "Alto"
+          },
+          "medio": {
+            "type": "integer",
+            "title": "Medio"
+          },
+          "baixo": {
+            "type": "integer",
+            "title": "Baixo"
+          },
+          "probabilidade_media": {
+            "type": "number",
+            "title": "Probabilidade Media"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "alto",
+          "medio",
+          "baixo",
+          "probabilidade_media"
+        ],
+        "title": "BatchSummary"
+      },
+      "ConfusionMatrix": {
+        "properties": {
+          "verdadeiro_positivo": {
+            "type": "integer",
+            "title": "Verdadeiro Positivo"
+          },
+          "falso_positivo": {
+            "type": "integer",
+            "title": "Falso Positivo"
+          },
+          "verdadeiro_negativo": {
+            "type": "integer",
+            "title": "Verdadeiro Negativo"
+          },
+          "falso_negativo": {
+            "type": "integer",
+            "title": "Falso Negativo"
+          }
+        },
+        "type": "object",
+        "required": [
+          "verdadeiro_positivo",
+          "falso_positivo",
+          "verdadeiro_negativo",
+          "falso_negativo"
+        ],
+        "title": "ConfusionMatrix"
+      },
+      "CustomerDetail": {
+        "properties": {
+          "perfil": {
+            "$ref": "#/components/schemas/CustomerProfile"
+          },
+          "previsao_atual": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/PredictionResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "historico_uso": {
+            "items": {
+              "$ref": "#/components/schemas/UsagePoint"
+            },
+            "type": "array",
+            "title": "Historico Uso"
+          },
+          "historico_pagamentos": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentPoint"
+            },
+            "type": "array",
+            "title": "Historico Pagamentos"
+          },
+          "chamados": {
+            "items": {
+              "$ref": "#/components/schemas/TicketItem"
+            },
+            "type": "array",
+            "title": "Chamados"
+          },
+          "pesquisas": {
+            "items": {
+              "$ref": "#/components/schemas/SurveyItem"
+            },
+            "type": "array",
+            "title": "Pesquisas"
+          },
+          "historico_previsoes": {
+            "items": {
+              "$ref": "#/components/schemas/PredictionHistoryItem"
+            },
+            "type": "array",
+            "title": "Historico Previsoes"
+          },
+          "acoes_retencao": {
+            "items": {
+              "$ref": "#/components/schemas/RetentionActionOut"
+            },
+            "type": "array",
+            "title": "Acoes Retencao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "perfil",
+          "previsao_atual",
+          "historico_uso",
+          "historico_pagamentos",
+          "chamados",
+          "pesquisas",
+          "historico_previsoes",
+          "acoes_retencao"
+        ],
+        "title": "CustomerDetail"
+      },
+      "CustomerFeatures": {
+        "properties": {
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "Opcional. Se informado e existir no banco, a previsão é registrada."
+          },
+          "tipo_cliente": {
+            "type": "string",
+            "enum": [
+              "Pessoa Física",
+              "Pequena Empresa",
+              "Média Empresa"
+            ],
+            "title": "Tipo Cliente"
+          },
+          "plano": {
+            "type": "string",
+            "enum": [
+              "Básico",
+              "Essencial",
+              "Profissional",
+              "Empresarial"
+            ],
+            "title": "Plano"
+          },
+          "funcionalidades_disponiveis": {
+            "type": "integer",
+            "maximum": 100.0,
+            "minimum": 1.0,
+            "title": "Funcionalidades Disponiveis"
+          },
+          "ciclo_contrato": {
+            "type": "string",
+            "enum": [
+              "Mensal",
+              "Anual"
+            ],
+            "title": "Ciclo Contrato"
+          },
+          "forma_pagamento": {
+            "type": "string",
+            "enum": [
+              "Cartão de crédito",
+              "Boleto",
+              "Pix",
+              "Débito automático"
+            ],
+            "title": "Forma Pagamento"
+          },
+          "renovacao_automatica": {
+            "type": "integer",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Renovacao Automatica"
+          },
+          "canal_aquisicao": {
+            "type": "string",
+            "title": "Canal Aquisicao"
+          },
+          "tempo_cliente_meses": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Tempo Cliente Meses",
+            "description": "Meses desde a contratação"
+          },
+          "acessos_m1": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Acessos M1",
+            "description": "Acessos no mês de referência"
+          },
+          "acessos_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acessos M2",
+            "description": "Acessos 1 mês antes"
+          },
+          "acessos_m3": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acessos M3"
+          },
+          "acessos_m4": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acessos M4"
+          },
+          "acessos_m5": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acessos M5"
+          },
+          "acessos_m6": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acessos M6",
+            "description": "Acessos 5 meses antes"
+          },
+          "sessoes_m1": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Sessoes M1"
+          },
+          "minutos_uso_m1": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Minutos Uso M1"
+          },
+          "minutos_uso_m2": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Minutos Uso M2"
+          },
+          "funcionalidades_usadas_m1": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Funcionalidades Usadas M1"
+          },
+          "dias_ativos_m1": {
+            "type": "number",
+            "maximum": 31.0,
+            "minimum": 0.0,
+            "title": "Dias Ativos M1"
+          },
+          "dias_desde_ultimo_acesso": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dias Desde Ultimo Acesso"
+          },
+          "faturas_6m": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Faturas 6M"
+          },
+          "faturas_atrasadas_6m": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Faturas Atrasadas 6M"
+          },
+          "dias_atraso_medio_6m": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dias Atraso Medio 6M"
+          },
+          "faturas_em_aberto": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Faturas Em Aberto"
+          },
+          "valor_total_pago": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Valor Total Pago"
+          },
+          "valor_mensal": {
+            "type": "number",
+            "exclusiveMinimum": 0.0,
+            "title": "Valor Mensal"
+          },
+          "reajuste_pct_6m": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reajuste Pct 6M"
+          },
+          "tickets_3m": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Tickets 3M"
+          },
+          "tickets_6m": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Tickets 6M"
+          },
+          "tickets_tecnicos_6m": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Tickets Tecnicos 6M"
+          },
+          "reclamacoes_6m": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Reclamacoes 6M"
+          },
+          "tempo_medio_resolucao_h_6m": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tempo Medio Resolucao H 6M"
+          },
+          "avaliacao_media_6m": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 5.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avaliacao Media 6M"
+          },
+          "dias_desde_ultimo_chamado": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dias Desde Ultimo Chamado"
+          },
+          "ultima_nota_satisfacao": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 10.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ultima Nota Satisfacao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tipo_cliente",
+          "plano",
+          "funcionalidades_disponiveis",
+          "ciclo_contrato",
+          "forma_pagamento",
+          "renovacao_automatica",
+          "canal_aquisicao",
+          "tempo_cliente_meses",
+          "acessos_m1",
+          "sessoes_m1",
+          "minutos_uso_m1",
+          "funcionalidades_usadas_m1",
+          "dias_ativos_m1",
+          "faturas_6m",
+          "faturas_atrasadas_6m",
+          "faturas_em_aberto",
+          "valor_total_pago",
+          "valor_mensal",
+          "tickets_3m",
+          "tickets_6m",
+          "tickets_tecnicos_6m",
+          "reclamacoes_6m"
+        ],
+        "title": "CustomerFeatures",
+        "description": "Dados de um cliente na data de referência (agregados dos últimos meses).",
+        "example": {
+          "acessos_m1": 22,
+          "acessos_m2": 41,
+          "acessos_m3": 58,
+          "acessos_m4": 63,
+          "acessos_m5": 60,
+          "acessos_m6": 66,
+          "avaliacao_media_6m": 3.0,
+          "canal_aquisicao": "Anúncios pagos",
+          "ciclo_contrato": "Mensal",
+          "customer_id": "CLI-00042",
+          "dias_ativos_m1": 9,
+          "dias_atraso_medio_6m": 4.5,
+          "dias_desde_ultimo_acesso": 12,
+          "dias_desde_ultimo_chamado": 9,
+          "faturas_6m": 6,
+          "faturas_atrasadas_6m": 2,
+          "faturas_em_aberto": 0,
+          "forma_pagamento": "Boleto",
+          "funcionalidades_disponiveis": 14,
+          "funcionalidades_usadas_m1": 3,
+          "minutos_uso_m1": 390,
+          "minutos_uso_m2": 720,
+          "plano": "Profissional",
+          "reajuste_pct_6m": 0.0,
+          "reclamacoes_6m": 2,
+          "renovacao_automatica": 0,
+          "sessoes_m1": 28,
+          "tempo_cliente_meses": 8.5,
+          "tempo_medio_resolucao_h_6m": 26.0,
+          "tickets_3m": 3,
+          "tickets_6m": 4,
+          "tickets_tecnicos_6m": 2,
+          "tipo_cliente": "Pequena Empresa",
+          "ultima_nota_satisfacao": 6,
+          "valor_mensal": 199.9,
+          "valor_total_pago": 1599.2
+        }
+      },
+      "CustomerList": {
+        "properties": {
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "pagina": {
+            "type": "integer",
+            "title": "Pagina"
+          },
+          "tamanho_pagina": {
+            "type": "integer",
+            "title": "Tamanho Pagina"
+          },
+          "faixas_risco": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Faixas Risco"
+          },
+          "itens": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerRiskRow"
+            },
+            "type": "array",
+            "title": "Itens"
+          }
+        },
+        "type": "object",
+        "required": [
+          "total",
+          "pagina",
+          "tamanho_pagina",
+          "faixas_risco",
+          "itens"
+        ],
+        "title": "CustomerList"
+      },
+      "CustomerProfile": {
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome"
+          },
+          "tipo_cliente": {
+            "type": "string",
+            "title": "Tipo Cliente"
+          },
+          "regiao": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Regiao"
+          },
+          "plano": {
+            "type": "string",
+            "title": "Plano"
+          },
+          "ciclo_contrato": {
+            "type": "string",
+            "title": "Ciclo Contrato"
+          },
+          "forma_pagamento": {
+            "type": "string",
+            "title": "Forma Pagamento"
+          },
+          "renovacao_automatica": {
+            "type": "boolean",
+            "title": "Renovacao Automatica"
+          },
+          "canal_aquisicao": {
+            "type": "string",
+            "title": "Canal Aquisicao"
+          },
+          "data_inicio": {
+            "type": "string",
+            "format": "date",
+            "title": "Data Inicio"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "tempo_cliente_meses": {
+            "type": "number",
+            "title": "Tempo Cliente Meses"
+          },
+          "valor_mensal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor Mensal"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "nome",
+          "tipo_cliente",
+          "regiao",
+          "plano",
+          "ciclo_contrato",
+          "forma_pagamento",
+          "renovacao_automatica",
+          "canal_aquisicao",
+          "data_inicio",
+          "status",
+          "tempo_cliente_meses",
+          "valor_mensal"
+        ],
+        "title": "CustomerProfile"
+      },
+      "CustomerRiskRow": {
+        "properties": {
+          "prediction_id": {
+            "type": "integer",
+            "title": "Prediction Id"
+          },
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id"
+          },
+          "nome": {
+            "type": "string",
+            "title": "Nome"
+          },
+          "plano": {
+            "type": "string",
+            "title": "Plano"
+          },
+          "regiao": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Regiao"
+          },
+          "tipo_cliente": {
+            "type": "string",
+            "title": "Tipo Cliente"
+          },
+          "ciclo_contrato": {
+            "type": "string",
+            "title": "Ciclo Contrato"
+          },
+          "valor_mensal": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor Mensal"
+          },
+          "tempo_cliente_meses": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tempo Cliente Meses"
+          },
+          "probabilidade": {
+            "type": "number",
+            "title": "Probabilidade"
+          },
+          "nivel_risco": {
+            "type": "string",
+            "enum": [
+              "Baixo",
+              "Médio",
+              "Alto"
+            ],
+            "title": "Nivel Risco"
+          },
+          "principal_fator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Principal Fator"
+          },
+          "categoria_principal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Categoria Principal"
+          },
+          "acao_sugerida": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acao Sugerida"
+          },
+          "data_referencia": {
+            "type": "string",
+            "format": "date",
+            "title": "Data Referencia"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          },
+          "origem": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origem"
+          },
+          "churn_real": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Churn Real",
+            "description": "Resultado observado em 60 dias (períodos históricos)"
+          }
+        },
+        "type": "object",
+        "required": [
+          "prediction_id",
+          "customer_id",
+          "nome",
+          "plano",
+          "regiao",
+          "tipo_cliente",
+          "ciclo_contrato",
+          "valor_mensal",
+          "tempo_cliente_meses",
+          "probabilidade",
+          "nivel_risco",
+          "principal_fator",
+          "categoria_principal",
+          "acao_sugerida",
+          "data_referencia",
+          "model_version"
+        ],
+        "title": "CustomerRiskRow"
+      },
+      "Factor": {
+        "properties": {
+          "feature": {
+            "type": "string",
+            "title": "Feature"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label"
+          },
+          "category": {
+            "type": "string",
+            "title": "Category"
+          },
+          "category_label": {
+            "type": "string",
+            "title": "Category Label"
+          },
+          "impact": {
+            "type": "number",
+            "title": "Impact",
+            "description": "Contribuição SHAP (log-odds). Positivo aumenta o risco."
+          },
+          "value": {
+            "type": "string",
+            "title": "Value"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "Explicação em linguagem de negócio"
+          },
+          "acionavel": {
+            "type": "boolean",
+            "title": "Acionavel",
+            "description": "Se a empresa pode influenciar esse fator com uma ação"
+          }
+        },
+        "type": "object",
+        "required": [
+          "feature",
+          "label",
+          "category",
+          "category_label",
+          "impact",
+          "value",
+          "text",
+          "acionavel"
+        ],
+        "title": "Factor"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "Health": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degradado"
+            ],
+            "title": "Status"
+          },
+          "database": {
+            "type": "string",
+            "title": "Database"
+          },
+          "model": {
+            "type": "string",
+            "title": "Model"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Version"
+          },
+          "data_referencia": {
+            "type": "string",
+            "format": "date",
+            "title": "Data Referencia"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "database",
+          "model",
+          "model_version",
+          "data_referencia",
+          "timestamp"
+        ],
+        "title": "Health"
+      },
+      "ModelInfo": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name"
+          },
+          "trained_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Trained At"
+          },
+          "target": {
+            "type": "string",
+            "title": "Target"
+          },
+          "horizon_days": {
+            "type": "integer",
+            "title": "Horizon Days"
+          },
+          "threshold": {
+            "type": "number",
+            "title": "Threshold"
+          },
+          "risk_thresholds": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Risk Thresholds"
+          },
+          "best_params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Best Params"
+          },
+          "imbalance_strategy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Imbalance Strategy"
+          },
+          "business_assumptions": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Business Assumptions"
+          },
+          "features": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Features"
+          },
+          "training_data": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Training Data"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "model_name",
+          "trained_at",
+          "target",
+          "horizon_days",
+          "threshold",
+          "risk_thresholds",
+          "best_params",
+          "imbalance_strategy",
+          "business_assumptions",
+          "features",
+          "training_data"
+        ],
+        "title": "ModelInfo"
+      },
+      "ModelMetrics": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "threshold": {
+            "type": "number",
+            "title": "Threshold"
+          },
+          "roc_auc": {
+            "type": "number",
+            "title": "Roc Auc"
+          },
+          "pr_auc": {
+            "type": "number",
+            "title": "Pr Auc"
+          },
+          "precision": {
+            "type": "number",
+            "title": "Precision"
+          },
+          "recall": {
+            "type": "number",
+            "title": "Recall"
+          },
+          "f1": {
+            "type": "number",
+            "title": "F1"
+          },
+          "accuracy": {
+            "type": "number",
+            "title": "Accuracy"
+          },
+          "brier": {
+            "type": "number",
+            "title": "Brier"
+          },
+          "base_rate": {
+            "type": "number",
+            "title": "Base Rate"
+          },
+          "matriz_confusao": {
+            "$ref": "#/components/schemas/ConfusionMatrix"
+          },
+          "validacao_cruzada": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Validacao Cruzada"
+          },
+          "periodo_teste": {
+            "type": "string",
+            "title": "Periodo Teste"
+          },
+          "resultado_esperado": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Resultado Esperado"
+          },
+          "observacao": {
+            "type": "string",
+            "title": "Observacao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "threshold",
+          "roc_auc",
+          "pr_auc",
+          "precision",
+          "recall",
+          "f1",
+          "accuracy",
+          "brier",
+          "base_rate",
+          "matriz_confusao",
+          "validacao_cruzada",
+          "periodo_teste",
+          "resultado_esperado",
+          "observacao"
+        ],
+        "title": "ModelMetrics"
+      },
+      "PaymentPoint": {
+        "properties": {
+          "mes_referencia": {
+            "type": "string",
+            "format": "date",
+            "title": "Mes Referencia"
+          },
+          "valor_cobrado": {
+            "type": "number",
+            "title": "Valor Cobrado"
+          },
+          "data_vencimento": {
+            "type": "string",
+            "format": "date",
+            "title": "Data Vencimento"
+          },
+          "data_pagamento": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Pagamento"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "dias_atraso": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dias Atraso"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mes_referencia",
+          "valor_cobrado",
+          "data_vencimento",
+          "data_pagamento",
+          "status"
+        ],
+        "title": "PaymentPoint"
+      },
+      "PredictionHistoryItem": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "data_referencia": {
+            "type": "string",
+            "format": "date",
+            "title": "Data Referencia"
+          },
+          "probabilidade": {
+            "type": "number",
+            "title": "Probabilidade"
+          },
+          "nivel_risco": {
+            "type": "string",
+            "enum": [
+              "Baixo",
+              "Médio",
+              "Alto"
+            ],
+            "title": "Nivel Risco"
+          },
+          "origem": {
+            "type": "string",
+            "title": "Origem"
+          },
+          "churn_real": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Churn Real"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "data_referencia",
+          "probabilidade",
+          "nivel_risco",
+          "origem",
+          "churn_real",
+          "model_version"
+        ],
+        "title": "PredictionHistoryItem"
+      },
+      "PredictionResult": {
+        "properties": {
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id"
+          },
+          "data_referencia": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Data Referencia"
+          },
+          "probabilidade": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Probabilidade",
+            "description": "Probabilidade estimada de cancelamento em 60 dias"
+          },
+          "nivel_risco": {
+            "type": "string",
+            "enum": [
+              "Baixo",
+              "Médio",
+              "Alto"
+            ],
+            "title": "Nivel Risco"
+          },
+          "acima_do_threshold": {
+            "type": "boolean",
+            "title": "Acima Do Threshold"
+          },
+          "threshold": {
+            "type": "number",
+            "title": "Threshold"
+          },
+          "faixas_risco": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Faixas Risco"
+          },
+          "model_version": {
+            "type": "string",
+            "title": "Model Version"
+          },
+          "principal_fator": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Principal Fator"
+          },
+          "resumo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resumo",
+            "description": "Explicação em uma frase, em linguagem de negócio"
+          },
+          "categoria_principal": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Categoria Principal"
+          },
+          "fatores_risco": {
+            "items": {
+              "$ref": "#/components/schemas/Factor"
+            },
+            "type": "array",
+            "title": "Fatores Risco",
+            "default": []
+          },
+          "fatores_protecao": {
+            "items": {
+              "$ref": "#/components/schemas/Factor"
+            },
+            "type": "array",
+            "title": "Fatores Protecao",
+            "default": []
+          },
+          "recomendacao": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Recommendation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "prediction_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prediction Id"
+          },
+          "aviso": {
+            "type": "string",
+            "title": "Aviso"
+          }
+        },
+        "type": "object",
+        "required": [
+          "probabilidade",
+          "nivel_risco",
+          "acima_do_threshold",
+          "threshold",
+          "faixas_risco",
+          "model_version",
+          "aviso"
+        ],
+        "title": "PredictionResult"
+      },
+      "Recommendation": {
+        "properties": {
+          "prioridade": {
+            "type": "string",
+            "title": "Prioridade"
+          },
+          "acao_sugerida": {
+            "type": "string",
+            "title": "Acao Sugerida"
+          },
+          "aviso": {
+            "type": "string",
+            "title": "Aviso"
+          }
+        },
+        "type": "object",
+        "required": [
+          "prioridade",
+          "acao_sugerida",
+          "aviso"
+        ],
+        "title": "Recommendation"
+      },
+      "RetentionActionCreate": {
+        "properties": {
+          "tipo_acao": {
+            "type": "string",
+            "enum": [
+              "Contato do Customer Success",
+              "Treinamento / reonboarding",
+              "Negociação financeira",
+              "Oferta de ajuste de plano",
+              "Follow-up de suporte",
+              "Conversa de renovação",
+              "Campanha de engajamento",
+              "Revisão humana: sem ação",
+              "Outra"
+            ],
+            "title": "Tipo Acao"
+          },
+          "responsavel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Responsavel"
+          },
+          "observacoes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacoes"
+          },
+          "prediction_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prediction Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "tipo_acao"
+        ],
+        "title": "RetentionActionCreate"
+      },
+      "RetentionActionOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id"
+          },
+          "prediction_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prediction Id"
+          },
+          "tipo_acao": {
+            "type": "string",
+            "title": "Tipo Acao"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "responsavel": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Responsavel"
+          },
+          "observacoes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacoes"
+          },
+          "resultado": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultado"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "customer_id",
+          "prediction_id",
+          "tipo_acao",
+          "status",
+          "responsavel",
+          "observacoes",
+          "resultado",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "RetentionActionOut"
+      },
+      "RetentionActionUpdate": {
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "Planejada",
+                  "Em andamento",
+                  "Concluída",
+                  "Cancelada"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "responsavel": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 80
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Responsavel"
+          },
+          "observacoes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observacoes"
+          },
+          "resultado": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "Retido",
+                  "Cancelou",
+                  "Sem resposta"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resultado"
+          }
+        },
+        "type": "object",
+        "title": "RetentionActionUpdate"
+      },
+      "SimulationRequest": {
+        "properties": {
+          "aumento_uso_percentual": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 300.0,
+                "minimum": -100.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Aumento Uso Percentual",
+            "description": "Varia acessos, sessões, minutos e dias ativos recentes"
+          },
+          "remover_atrasos": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Remover Atrasos",
+            "description": "Zera atrasos e faturas em aberto"
+          },
+          "reclamacoes_6m": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reclamacoes 6M"
+          },
+          "tickets_3m": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tickets 3M"
+          },
+          "tickets_6m": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tickets 6M"
+          },
+          "tickets_tecnicos_6m": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tickets Tecnicos 6M"
+          },
+          "plano": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "Básico",
+                  "Essencial",
+                  "Profissional",
+                  "Empresarial"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Plano"
+          },
+          "forma_pagamento": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "Cartão de crédito",
+                  "Boleto",
+                  "Pix",
+                  "Débito automático"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Forma Pagamento"
+          },
+          "renovacao_automatica": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Renovacao Automatica"
+          },
+          "ciclo_contrato": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "Mensal",
+                  "Anual"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ciclo Contrato"
+          },
+          "ultima_nota_satisfacao": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 10.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ultima Nota Satisfacao"
+          },
+          "dias_desde_ultimo_acesso": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dias Desde Ultimo Acesso"
+          }
+        },
+        "type": "object",
+        "title": "SimulationRequest",
+        "description": "Alterações hipotéticas. Somente os campos informados são alterados.",
+        "example": {
+          "aumento_uso_percentual": 40,
+          "remover_atrasos": true
+        }
+      },
+      "SimulationResult": {
+        "properties": {
+          "customer_id": {
+            "type": "string",
+            "title": "Customer Id"
+          },
+          "data_referencia": {
+            "type": "string",
+            "format": "date",
+            "title": "Data Referencia"
+          },
+          "alteracoes_aplicadas": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Alteracoes Aplicadas"
+          },
+          "atual": {
+            "$ref": "#/components/schemas/PredictionResult"
+          },
+          "simulado": {
+            "$ref": "#/components/schemas/PredictionResult"
+          },
+          "variacao_pontos_percentuais": {
+            "type": "number",
+            "title": "Variacao Pontos Percentuais"
+          },
+          "aviso": {
+            "type": "string",
+            "title": "Aviso"
+          }
+        },
+        "type": "object",
+        "required": [
+          "customer_id",
+          "data_referencia",
+          "alteracoes_aplicadas",
+          "atual",
+          "simulado",
+          "variacao_pontos_percentuais",
+          "aviso"
+        ],
+        "title": "SimulationResult"
+      },
+      "SurveyItem": {
+        "properties": {
+          "data_resposta": {
+            "type": "string",
+            "format": "date",
+            "title": "Data Resposta"
+          },
+          "nota_satisfacao": {
+            "type": "integer",
+            "title": "Nota Satisfacao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "data_resposta",
+          "nota_satisfacao"
+        ],
+        "title": "SurveyItem"
+      },
+      "TicketItem": {
+        "properties": {
+          "ticket_id": {
+            "type": "string",
+            "title": "Ticket Id"
+          },
+          "data_abertura": {
+            "type": "string",
+            "format": "date",
+            "title": "Data Abertura"
+          },
+          "categoria": {
+            "type": "string",
+            "title": "Categoria"
+          },
+          "tempo_resolucao_horas": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tempo Resolucao Horas"
+          },
+          "avaliacao": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avaliacao"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ticket_id",
+          "data_abertura",
+          "categoria",
+          "tempo_resolucao_horas",
+          "avaliacao"
+        ],
+        "title": "TicketItem"
+      },
+      "UsagePoint": {
+        "properties": {
+          "mes_referencia": {
+            "type": "string",
+            "format": "date",
+            "title": "Mes Referencia"
+          },
+          "acessos": {
+            "type": "integer",
+            "title": "Acessos"
+          },
+          "sessoes": {
+            "type": "integer",
+            "title": "Sessoes"
+          },
+          "minutos_uso": {
+            "type": "integer",
+            "title": "Minutos Uso"
+          },
+          "funcionalidades_usadas": {
+            "type": "integer",
+            "title": "Funcionalidades Usadas"
+          },
+          "dias_ativos": {
+            "type": "integer",
+            "title": "Dias Ativos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "mes_referencia",
+          "acessos",
+          "sessoes",
+          "minutos_uso",
+          "funcionalidades_usadas",
+          "dias_ativos"
+        ],
+        "title": "UsagePoint"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    },
+    "securitySchemes": {
+      "APIKeyHeader": {
+        "type": "apiKey",
+        "description": "Chave de acesso à API",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Previsão",
+      "description": "Pontuação de clientes a partir de dados enviados na requisição."
+    },
+    {
+      "name": "Clientes",
+      "description": "Consulta de clientes, risco calculado a partir do banco e simulação."
+    },
+    {
+      "name": "Ações de retenção",
+      "description": "Registro das decisões humanas tomadas a partir das previsões."
+    },
+    {
+      "name": "Dashboard",
+      "description": "Dados agregados para o painel."
+    },
+    {
+      "name": "Modelo",
+      "description": "Versão, parâmetros e métricas do modelo."
+    },
+    {
+      "name": "Monitoramento",
+      "description": "Desempenho ao longo do tempo, drift dos dados e alertas."
+    },
+    {
+      "name": "Sistema",
+      "description": "Saúde da aplicação."
+    }
+  ]
+}

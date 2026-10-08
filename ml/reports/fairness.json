@@ -1,0 +1,140 @@
+{
+  "regiao": {
+    "tabela": [
+      {
+        "grupo": "Norte",
+        "clientes_mes": 2297,
+        "churn_real": 0.0966,
+        "prob_media": 0.0768,
+        "pct_alto_risco": 0.0731,
+        "recall": 0.2703,
+        "precision": 0.3571
+      },
+      {
+        "grupo": "Nordeste",
+        "clientes_mes": 5823,
+        "churn_real": 0.084,
+        "prob_media": 0.0784,
+        "pct_alto_risco": 0.0771,
+        "recall": 0.3006,
+        "precision": 0.3274
+      },
+      {
+        "grupo": "Centro-Oeste",
+        "clientes_mes": 2650,
+        "churn_real": 0.0887,
+        "prob_media": 0.0781,
+        "pct_alto_risco": 0.0789,
+        "recall": 0.3234,
+        "precision": 0.3636
+      },
+      {
+        "grupo": "Sudeste",
+        "clientes_mes": 12429,
+        "churn_real": 0.085,
+        "prob_media": 0.0788,
+        "pct_alto_risco": 0.0774,
+        "recall": 0.3106,
+        "precision": 0.341
+      },
+      {
+        "grupo": "Sul",
+        "clientes_mes": 4454,
+        "churn_real": 0.0945,
+        "prob_media": 0.0793,
+        "pct_alto_risco": 0.0802,
+        "recall": 0.2922,
+        "precision": 0.3445
+      }
+    ],
+    "amplitude_recall": 0.053133985048878674,
+    "amplitude_gap_calibracao": 0.019881344524311714,
+    "razao_sinalizacao": 0.9124945581192861
+  },
+  "faixa_idade": {
+    "tabela": [
+      {
+        "grupo": "18–25",
+        "clientes_mes": 3216,
+        "churn_real": 0.0948,
+        "prob_media": 0.0765,
+        "pct_alto_risco": 0.0706,
+        "recall": 0.2623,
+        "precision": 0.3524
+      },
+      {
+        "grupo": "26–35",
+        "clientes_mes": 7172,
+        "churn_real": 0.0838,
+        "prob_media": 0.0794,
+        "pct_alto_risco": 0.0791,
+        "recall": 0.3128,
+        "precision": 0.3316
+      },
+      {
+        "grupo": "36–45",
+        "clientes_mes": 8834,
+        "churn_real": 0.085,
+        "prob_media": 0.0773,
+        "pct_alto_risco": 0.0757,
+        "recall": 0.3063,
+        "precision": 0.3438
+      },
+      {
+        "grupo": "46–60",
+        "clientes_mes": 6794,
+        "churn_real": 0.091,
+        "prob_media": 0.08,
+        "pct_alto_risco": 0.0817,
+        "recall": 0.3123,
+        "precision": 0.3477
+      },
+      {
+        "grupo": "60+",
+        "clientes_mes": 877,
+        "churn_real": 0.0844,
+        "prob_media": 0.0846,
+        "pct_alto_risco": 0.0878,
+        "recall": 0.2973,
+        "precision": 0.2857
+      }
+    ],
+    "amplitude_recall": 0.05051689806606474,
+    "amplitude_gap_calibracao": 0.018299811521268528,
+    "razao_sinalizacao": 0.8039308328487433
+  },
+  "tipo_cliente": {
+    "tabela": [
+      {
+        "grupo": "Pessoa Física",
+        "clientes_mes": 14327,
+        "churn_real": 0.0971,
+        "prob_media": 0.0782,
+        "pct_alto_risco": 0.074,
+        "recall": 0.2739,
+        "precision": 0.3594
+      },
+      {
+        "grupo": "Pequena Empresa",
+        "clientes_mes": 10445,
+        "churn_real": 0.0784,
+        "prob_media": 0.079,
+        "pct_alto_risco": 0.0796,
+        "recall": 0.3272,
+        "precision": 0.3225
+      },
+      {
+        "grupo": "Média Empresa",
+        "clientes_mes": 3020,
+        "churn_real": 0.0742,
+        "prob_media": 0.079,
+        "pct_alto_risco": 0.0881,
+        "recall": 0.3973,
+        "precision": 0.3346
+      }
+    ],
+    "amplitude_recall": 0.12341776214439765,
+    "amplitude_gap_calibracao": 0.018931891330237913,
+    "razao_sinalizacao": 0.8399934714989469
+  }
+}

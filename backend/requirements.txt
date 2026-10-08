@@ -1,0 +1,22 @@
+# API — Python 3.11+
+fastapi==0.142.2
+starlette==0.48.0
+uvicorn[standard]==0.46.0
+pydantic==2.13.3
+pydantic-settings==2.14.0
+sqlalchemy==2.0.54
+psycopg[binary]==3.3.6
+
+# Runtime do modelo (mesmas versões usadas no treino — ver ml/requirements.txt)
+pandas==3.0.2
+numpy==2.4.4
+pyarrow==25.0.1
+scipy==1.17.1
+scikit-learn==1.8.0
+imbalanced-learn==0.14.2
+shap==0.51.0
+joblib==1.5.3
+
+# Testes
+pytest==9.1.1
+httpx==0.28.1

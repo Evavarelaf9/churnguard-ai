@@ -1,0 +1,113 @@
+@import "@fontsource-variable/inter";
+@import "tailwindcss";
+
+/* ------------------------------------------------------------------------
+   Design tokens — ChurnGuard AI
+   Mesma paleta dos gráficos do relatório (ml/src/viz/style.py):
+   azul = marca/magnitude · laranja = "cancelou" · status = níveis de risco.
+   ------------------------------------------------------------------------ */
+@theme {
+  --font-sans: "Inter Variable", system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --color-brand-50: #eef5fd;
+  --color-brand-100: #cde2fb;
+  --color-brand-200: #9ec5f4;
+  --color-brand-300: #6da7ec;
+  --color-brand-400: #3987e5;
+  --color-brand-500: #2a78d6;
+  --color-brand-600: #256abf;
+  --color-brand-700: #184f95;
+  --color-brand-800: #104281;
+  --color-brand-900: #0d366b;
+
+  --color-navy-900: #0b1626;
+  --color-navy-800: #0d1b2e;
+  --color-navy-700: #152a45;
+  --color-navy-600: #1f3a5c;
+
+  --color-canvas: #f5f6f4;
+  --color-surface: #ffffff;
+  --color-surface-2: #fafaf8;
+  --color-line: #e5e4de;
+  --color-line-strong: #cfcdc4;
+  --color-ink: #16171a;
+  --color-ink-2: #4f5058;
+  --color-muted: #7c7d84;
+
+  --color-churn: #eb6834;
+  --color-retained: #2a78d6;
+
+  --color-risk-low: #0ca30c;
+  --color-risk-low-ink: #0a6e0a;
+  --color-risk-low-bg: #e8f6e8;
+  --color-risk-mid: #fab219;
+  --color-risk-mid-ink: #875400;
+  --color-risk-mid-bg: #fff4dc;
+  --color-risk-high: #d03b3b;
+  --color-risk-high-ink: #a82727;
+  --color-risk-high-bg: #fcebeb;
+
+  --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04), 0 1px 3px rgb(16 24 40 / 0.06);
+  --shadow-pop: 0 12px 32px -8px rgb(16 24 40 / 0.22);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-canvas text-ink font-sans;
+    font-feature-settings: "cv11", "ss01";
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Componentes reutilizáveis (Tailwind v4: @utility permite compor com @apply) */
+@utility card {
+  @apply bg-surface border border-line rounded-xl shadow-[var(--shadow-card)];
+}
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+}
+@utility btn-primary {
+  @apply btn bg-brand-600 text-white hover:bg-brand-700;
+}
+@utility btn-secondary {
+  @apply btn bg-surface text-ink border border-line hover:bg-surface-2 hover:border-line-strong;
+}
+@utility btn-ghost {
+  @apply btn text-ink-2 hover:bg-black/5;
+}
+@utility input {
+  @apply w-full rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-muted focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-500/20;
+}
+@utility label {
+  @apply mb-1 block text-xs font-medium text-ink-2;
+}
+@utility skeleton {
+  @apply animate-pulse rounded-md bg-black/[0.06];
+}
+
+/* Recharts: foco e tooltip consistentes */
+.recharts-wrapper:focus,
+.recharts-surface:focus {
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

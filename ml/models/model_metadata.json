@@ -1,0 +1,325 @@
+{
+  "model_version": "1.0.0",
+  "trained_at": "2026-09-30T10:55:50",
+  "model_key": "gradient_boosting",
+  "model_name": "Gradient Boosting (HistGradientBoosting)",
+  "best_params": {
+    "early_stopping": false,
+    "l2_regularization": 3.53875886477924,
+    "learning_rate": 0.041149615546913355,
+    "max_features": 0.471756547562981,
+    "max_iter": 280,
+    "max_leaf_nodes": 8,
+    "min_samples_leaf": 24
+  },
+  "imbalance_strategy": "Nenhuma",
+  "target": "churn em 60 dias",
+  "horizon_days": 60,
+  "training_data": {
+    "production_fit": "2024-06-30 → 2026-07-31",
+    "production_rows": 71176,
+    "train_start": "2024-06-30",
+    "train_end": "2025-09-30",
+    "test_start": "2025-12-31",
+    "test_end": "2026-07-31",
+    "train_rows": 37077,
+    "test_rows": 27792,
+    "train_churn_rate": 0.07913261590743588,
+    "test_churn_rate": 0.08757915947035118,
+    "cv_folds": [
+      {
+        "treino_ate": "2024-10-31",
+        "validacao": "2025-01-31 → 2025-03-31"
+      },
+      {
+        "treino_ate": "2025-01-31",
+        "validacao": "2025-04-30 → 2025-06-30"
+      },
+      {
+        "treino_ate": "2025-04-30",
+        "validacao": "2025-07-31 → 2025-09-30"
+      }
+    ]
+  },
+  "features": {
+    "categorical": [
+      "tipo_cliente",
+      "plano",
+      "ciclo_contrato",
+      "forma_pagamento",
+      "canal_aquisicao"
+    ],
+    "numeric": [
+      "tempo_cliente_meses",
+      "valor_mensal",
+      "valor_total_pago",
+      "reajuste_pct_6m",
+      "meses_ate_renovacao",
+      "media_acessos_semana",
+      "taxa_utilizacao_funcionalidades",
+      "taxa_dias_ativos",
+      "minutos_por_sessao",
+      "dias_desde_ultimo_acesso",
+      "variacao_uso",
+      "variacao_uso_ultimo_mes",
+      "variacao_minutos",
+      "tendencia_uso",
+      "meses_consecutivos_queda",
+      "percentual_pagamentos_atrasados",
+      "dias_atraso_medio_6m",
+      "faturas_em_aberto",
+      "relacao_tickets_por_mes",
+      "aceleracao_tickets",
+      "reclamacoes_6m",
+      "proporcao_reclamacoes",
+      "tickets_tecnicos_6m",
+      "tempo_medio_resolucao_h_6m",
+      "avaliacao_media_6m",
+      "tempo_desde_ultimo_chamado",
+      "ultima_nota_satisfacao"
+    ],
+    "binary": [
+      "renovacao_automatica",
+      "historico_curto",
+      "tem_fatura_em_aberto",
+      "teve_reajuste_recente",
+      "nunca_abriu_chamado",
+      "sem_avaliacao_suporte",
+      "sem_pesquisa_satisfacao",
+      "cliente_novo",
+      "renovacao_proxima"
+    ],
+    "raw_input_columns": [
+      "tipo_cliente",
+      "plano",
+      "funcionalidades_disponiveis",
+      "ciclo_contrato",
+      "forma_pagamento",
+      "renovacao_automatica",
+      "canal_aquisicao",
+      "tempo_cliente_meses",
+      "acessos_m1",
+      "acessos_m2",
+      "acessos_m3",
+      "acessos_m4",
+      "acessos_m5",
+      "acessos_m6",
+      "sessoes_m1",
+      "minutos_uso_m1",
+      "minutos_uso_m2",
+      "funcionalidades_usadas_m1",
+      "dias_ativos_m1",
+      "dias_desde_ultimo_acesso",
+      "faturas_6m",
+      "faturas_atrasadas_6m",
+      "dias_atraso_medio_6m",
+      "faturas_em_aberto",
+      "valor_total_pago",
+      "valor_mensal",
+      "reajuste_pct_6m",
+      "tickets_3m",
+      "tickets_6m",
+      "tickets_tecnicos_6m",
+      "reclamacoes_6m",
+      "tempo_medio_resolucao_h_6m",
+      "avaliacao_media_6m",
+      "dias_desde_ultimo_chamado",
+      "ultima_nota_satisfacao"
+    ],
+    "excluded": {
+      "customer_id": "identificador",
+      "nome": "dado pessoal, sem valor preditivo",
+      "data_referencia": "metadado temporal (usado só para dividir treino/teste)",
+      "idade": "atributo pessoal sem sinal na EDA — mantido só para auditoria de viés (LGPD)",
+      "regiao": "atributo geográfico sem sinal na EDA — mantido só para auditoria de viés",
+      "churn": "variável-alvo"
+    }
+  },
+  "threshold": {
+    "operacional": 0.23,
+    "f1_otimo": 0.17,
+    "criterio": "máximo resultado líquido esperado (OOF do treino)"
+  },
+  "risk_thresholds": {
+    "medio": 0.12,
+    "alto": 0.23
+  },
+  "business_assumptions": {
+    "custo_acao": 50.0,
+    "taxa_sucesso_retencao": 0.25,
+    "meses_receita_preservada": 8
+  },
+  "global_importance": [
+    {
+      "feature": "meses_ate_renovacao",
+      "label": "Janela de renovação do contrato",
+      "permutation_importance": 0.12798,
+      "mean_abs_shap": 0.6501,
+      "direction": -0.863
+    },
+    {
+      "feature": "taxa_dias_ativos",
+      "label": "Dias ativos no mês",
+      "permutation_importance": 0.08908,
+      "mean_abs_shap": 0.33636,
+      "direction": -0.923
+    },
+    {
+      "feature": "forma_pagamento",
+      "label": "Forma de pagamento",
+      "permutation_importance": 0.00868,
+      "mean_abs_shap": 0.1595,
+      "direction": null
+    },
+    {
+      "feature": "tempo_cliente_meses",
+      "label": "Tempo como cliente",
+      "permutation_importance": 0.00854,
+      "mean_abs_shap": 0.12385,
+      "direction": -0.82
+    },
+    {
+      "feature": "variacao_uso_ultimo_mes",
+      "label": "Variação de uso no último mês",
+      "permutation_importance": 0.00757,
+      "mean_abs_shap": 0.10382,
+      "direction": -0.486
+    },
+    {
+      "feature": "ciclo_contrato",
+      "label": "Tipo de contrato",
+      "permutation_importance": 0.00729,
+      "mean_abs_shap": 0.08223,
+      "direction": null
+    },
+    {
+      "feature": "ultima_nota_satisfacao",
+      "label": "Nota de satisfação",
+      "permutation_importance": 0.00639,
+      "mean_abs_shap": 0.04751,
+      "direction": -0.891
+    },
+    {
+      "feature": "tempo_desde_ultimo_chamado",
+      "label": "Tempo desde o último chamado",
+      "permutation_importance": 0.00566,
+      "mean_abs_shap": 0.08013,
+      "direction": -0.672
+    },
+    {
+      "feature": "taxa_utilizacao_funcionalidades",
+      "label": "Uso das funcionalidades do plano",
+      "permutation_importance": 0.00471,
+      "mean_abs_shap": 0.0955,
+      "direction": -0.931
+    },
+    {
+      "feature": "variacao_minutos",
+      "label": "Variação do tempo de uso",
+      "permutation_importance": 0.0037,
+      "mean_abs_shap": 0.00731,
+      "direction": 0.148
+    },
+    {
+      "feature": "percentual_pagamentos_atrasados",
+      "label": "Pagamentos em atraso",
+      "permutation_importance": 0.00359,
+      "mean_abs_shap": 0.07935,
+      "direction": 0.907
+    },
+    {
+      "feature": "canal_aquisicao",
+      "label": "Canal de aquisição",
+      "permutation_importance": 0.00335,
+      "mean_abs_shap": 0.07365,
+      "direction": null
+    },
+    {
+      "feature": "reclamacoes_6m",
+      "label": "Reclamações",
+      "permutation_importance": 0.00313,
+      "mean_abs_shap": 0.07171,
+      "direction": 0.949
+    },
+    {
+      "feature": "renovacao_automatica",
+      "label": "Renovação automática",
+      "permutation_importance": 0.00299,
+      "mean_abs_shap": 0.05314,
+      "direction": -0.913
+    },
+    {
+      "feature": "dias_desde_ultimo_acesso",
+      "label": "Dias desde o último acesso",
+      "permutation_importance": 0.00262,
+      "mean_abs_shap": 0.07509,
+      "direction": 0.751
+    }
+  ],
+  "metrics": {
+    "cv": {
+      "roc_auc": 0.7826942514540386,
+      "pr_auc": 0.25998719047087765,
+      "precision": 0.501920679514939,
+      "recall": 0.04154125551442538,
+      "f1": 0.07651989831922336,
+      "brier": 0.06389185564160141,
+      "prob_media": 0.08065814816584203,
+      "base_rate": 0.07628691411849002,
+      "pr_auc_std": 0.008390051080986493,
+      "roc_auc_std": 0.012029005740876163,
+      "pr_auc_folds": [
+        0.2657,
+        0.2503,
+        0.264
+      ]
+    },
+    "test_at_operational_threshold": {
+      "threshold": 0.23,
+      "roc_auc": 0.7939903134363249,
+      "pr_auc": 0.2984385302192694,
+      "precision": 0.34214186369958277,
+      "recall": 0.3032046014790468,
+      "f1": 0.3214985841864518,
+      "accuracy": 0.8879173862982153,
+      "brier": 0.07049935359644866,
+      "tp": 738,
+      "fp": 1419,
+      "tn": 23939,
+      "fn": 1696,
+      "base_rate": 0.08757915947035118,
+      "n": 27792
+    },
+    "test_at_0_5": {
+      "threshold": 0.5,
+      "roc_auc": 0.7939903134363249,
+      "pr_auc": 0.2984385302192694,
+      "precision": 0.5714285714285714,
+      "recall": 0.041084634346754315,
+      "f1": 0.07665772326561901,
+      "accuracy": 0.9133203799654577,
+      "brier": 0.07049935359644866,
+      "tp": 100,
+      "fp": 75,
+      "tn": 25283,
+      "fn": 2334,
+      "base_rate": 0.08757915947035118,
+      "n": 27792
+    },
+    "test_expected_value": {
+      "abordados": 2157,
+      "percentual_abordados": 0.07761226252158894,
+      "churns_identificados": 738,
+      "churns_totais": 2434,
+      "receita_preservada_esperada": 205837.74000000002,
+      "custo_campanha": 107850.0,
+      "resultado_liquido": 97987.74000000002
+    }
+  },
+  "environment": {
+    "python": "3.11.15",
+    "scikit_learn": "1.8.0",
+    "pandas": "3.0.2",
+    "numpy": "2.4.4"
+  }
+}

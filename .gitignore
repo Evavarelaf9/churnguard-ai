@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.ipynb_checkpoints/
+.pytest_cache/
+.ruff_cache/
+
+# Dados e artefatos gerados (reprodutíveis via scripts)
+ml/data/raw/*.csv
+ml/data/processed/*.parquet
+!ml/data/**/.gitkeep
+ml/reports/shap_sample*.parquet
+ml/reports/test_scores_models.parquet
+ml/reports/search_cache.json
+# Modelos (~150 KB) SÃO versionados para a API funcionar sem re-treino.
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/*.tsbuildinfo
+frontend/.env
+
+# Pacotes locais
+*.zip
+
+# IDE / SO
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

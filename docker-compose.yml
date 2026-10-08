@@ -1,0 +1,96 @@
+# ChurnGuard AI — ambiente completo com um comando:
+#     docker compose up --build
+# Painel: http://localhost:8080 · API/Swagger: http://localhost:8000/docs
+name: churnguard
+
+x-api-image: &api-image
+  build:
+    context: .
+    dockerfile: backend/Dockerfile
+  image: churnguard-api:latest
+
+x-api-env: &api-env
+  DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-churnguard}:${POSTGRES_PASSWORD:-churnguard}@db:5432/${POSTGRES_DB:-churnguard}
+  REFERENCE_DATE: ${REFERENCE_DATE:-2026-09-30}
+  API_KEYS: ${API_KEYS:-painel-local-troque-esta-chave:painel}
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-churnguard}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-churnguard}
+      POSTGRES_DB: ${POSTGRES_DB:-churnguard}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:${DB_PORT:-5432}:5432"   # só acessível pela própria máquina
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Executa uma vez: gera os dados, aplica migrations, carrega o banco, pontua os clientes
+  # e registra o primeiro monitoramento. Idempotente (não repete o que já existe).
+  bootstrap:
+    <<: *api-image
+    command: ["python", "-m", "backend.app.db.bootstrap"]
+    environment: *api-env
+    volumes:
+      - mldata:/app/ml/data
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  api:
+    <<: *api-image
+    restart: unless-stopped
+    environment:
+      <<: *api-env
+      CORS_ORIGINS: '["http://localhost:8080","http://localhost:5173"]'
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    image: churnguard-frontend:latest
+    restart: unless-stopped
+    environment:
+      API_UPSTREAM: api:8000
+      # Primeira chave de API_KEYS (antes do ":"). O Nginx a injeta nas chamadas à API.
+      API_KEY: ${PANEL_API_KEY:-painel-local-troque-esta-chave}
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+
+  # Rotina diária (em produção, agende com cron/orquestrador):
+  #     docker compose --profile jobs run --rm jobs
+  jobs:
+    <<: *api-image
+    profiles: ["jobs"]
+    environment: *api-env
+    command:
+      - sh
+      - -c
+      - >
+        python -m backend.app.jobs.update_outcomes &&
+        python -m backend.app.jobs.score_customers &&
+        python -m backend.app.jobs.monitor
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
+  mldata:

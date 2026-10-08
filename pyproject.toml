@@ -1,0 +1,30 @@
+[project]
+name = "churnguard-ai"
+version = "1.0.0"
+description = "Inteligência Artificial para prever cancelamentos antes que eles aconteçam."
+requires-python = ">=3.11"
+license = { text = "MIT" }
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+extend-exclude = ["frontend", "ml/notebooks/*.ipynb"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B"]
+ignore = [
+    "E501",  # linhas longas: tabelas e mensagens em português
+    "E731",  # lambdas curtas em templates de texto
+    "E741",  # variáveis curtas em gráficos (l = lift)
+    "B008",  # Depends()/Query() nos parâmetros do FastAPI
+    "B904",  # HTTPException re-lançada intencionalmente
+    "B905",  # zip() sobre sequências de mesmo tamanho
+]
+
+[tool.ruff.lint.per-file-ignores]
+"ml/notebooks/*.py" = ["E402"]
+
+[tool.pytest.ini_options]
+testpaths = ["ml/tests", "backend/tests"]
+addopts = "-q"
+filterwarnings = ["ignore::DeprecationWarning", "ignore::UserWarning"]
